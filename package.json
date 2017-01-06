@@ -1,0 +1,15 @@
+{
+  "name": "bls",
+  "version": "0.0.1",
+  "description": "a rtmp server framework",
+  "main": "./bls.js",
+  "dependencies": {
+      "node-amfutils": "0.0.1"
+  },
+  "contributors": [
+      {
+          "name": "chenyuliang",
+          "email": "yuliangc9@gmail.com"
+      }
+  ]
+}
