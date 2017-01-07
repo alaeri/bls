@@ -24,6 +24,7 @@ struct rtmp_config_s
     int port;
     int max_client_num;
     const char *log_conf_path;
+    int log_level;
 
     size_t chunk_bucket_size;
     size_t chunk_pool_size;

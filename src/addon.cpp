@@ -37,8 +37,9 @@ Handle<Value> init_logger(const Arguments& args)
 {
     HandleScope scope;
     String::Utf8Value temp_str(args[0]->ToString());
+    int level = int(args[1]->NumberValue());
 
-    init_bls_logger((char *) *temp_str);
+    init_bls_logger((char *) *temp_str, level);
 
     return scope.Close(Undefined());
 }
@@ -84,6 +85,9 @@ Handle<Value> start_server(const Arguments& args)
             config_obj->Get(String::New("log_conf_path"))->ToString());
     conf.log_conf_path = (char *) *temp_str;
 
+    conf.log_level = config_obj->Get(
+        String::New("log_level"))->ToInt32()->Int32Value();
+
     if (config_obj->Has(String::New("max_client_num")))
     {
         conf.max_client_num = config_obj->Get(
@@ -101,7 +105,7 @@ Handle<Value> start_server(const Arguments& args)
     }
 
     //初始化日志模块
-    init_bls_logger(conf.log_conf_path);
+    init_bls_logger(conf.log_conf_path, conf.log_level);
 
     //初始化chunk池，预先分配内存资源
     init_chunk_pool(conf.chunk_bucket_size, conf.chunk_pool_size);

@@ -194,6 +194,9 @@ typedef BIGNUM * MP_t;
 
 #include "dhgroups.h"
 
+#define TRUE true
+#define FALSE false
+
 /* RFC 2631, Section 2.1.5, http://www.ietf.org/rfc/rfc2631.txt */
 static int
 isValidPublicKey(MP_t y, MP_t p, MP_t q)

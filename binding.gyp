@@ -4,7 +4,6 @@
             'target_name' : 'bls',
             'include_dirs' : [
                 'include',
-                'include/comlog',
             ],
             'defines' : [
             'NODE_EXTEND',
@@ -24,7 +23,6 @@
                 'src/BlsSource.cpp',
             ],
             'libraries' : [
-                './lib/libullib.a',
                 '-lpthread',
                 '-lrt',
                 '-lssl',
@@ -34,6 +32,8 @@
             'cxxflags' : [
                 '-O0 -g -Wall',
             ],
+            'cflags!': [ '-fno-exceptions' ],
+            'cflags_cc!': [ '-fno-exceptions' ],
             'cflags' : [
                 '-O0 -g -Wall',
             ],

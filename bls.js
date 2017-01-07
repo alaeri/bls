@@ -1,4 +1,4 @@
-var bls                 = require("./bls.node");
+var bls                 = require("./build/Release/bls.node");
 var util                = require("util");
 var EventEmitter     = require("events").EventEmitter;
 var amf                 = require("node-amfutils");
@@ -518,9 +518,9 @@ function remote_connect(ip, port, cb_func)
     });
 }
 
-function init_bms_log(conf_path)
+function init_bls_log(conf_path, level)
 {
-    bls.init_logger(conf_path);
+    bls.init_logger(conf_path, level);
     return;
 }
 
@@ -541,7 +541,7 @@ function write_log(level, format)
 }
 
 module.exports = { 
-    init_log : init_bms_log,
+    init_log : init_bls_log,
     write_log : write_log,
     start_server : start_server,
     remote_connect : remote_connect,
