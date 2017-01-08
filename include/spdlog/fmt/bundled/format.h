@@ -1493,6 +1493,8 @@ class MakeValue: public Arg
 {
 public:
     typedef typename Formatter::Char Char;
+    template <typename T>
+    MakeValue(T *value);
 
 private:
     // The following two methods are private to disallow formatting of
@@ -1502,8 +1504,6 @@ private:
     // Do not implement!
     template <typename T>
     MakeValue(const T *value);
-    template <typename T>
-    MakeValue(T *value);
 
     // The following methods are private to disallow formatting of wide
     // characters and strings into narrow strings as in

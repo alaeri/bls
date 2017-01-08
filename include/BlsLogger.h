@@ -36,8 +36,8 @@ void close_bls_logger();
 //#define WARNING(fmt, args...) com_writelog(COMLOG_WARNING, fmt, ##args)
 //#define FATAL(fmt, args...) com_writelog(COMLOG_FATAL, fmt, ##args)
 //
-//#define DEBUG_LOG(fmt, args...) spd::get("bls")->debug(fmt, ##args)
-#define DEBUG_LOG(fmt, args...) spd::get("bls")->debug(fmt)
+#define DEBUG_LOG(fmt, args...) spd::get("bls")->debug(fmt, ##args)
+//#define DEBUG_LOG(fmt, args...) spd::get("bls")->debug(fmt)
 #define TRACE(fmt, args...) spd::get("bls")->info(fmt, ##args)
 #define NOTICE(fmt, args...) spd::get("bls")->critical(fmt, ##args)
 #define WARNING(fmt, args...) spd::get("bls")->warn(fmt, ##args)
