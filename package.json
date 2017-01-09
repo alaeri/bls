@@ -1,5 +1,13 @@
 {
   "name": "bls",
+  "keywords": [
+      "rtmp",
+      "framework",
+      "edge",
+      "cluster",
+      "push",
+      "pull"
+  ],
   "version": "0.0.1",
   "description": "a rtmp server framework",
   "main": "./bls.js",
