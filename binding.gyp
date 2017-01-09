@@ -2,6 +2,9 @@
     'targets' : [
         {
             'target_name' : 'bls',
+            "engines" : { "node" : ">=0.10.3 <0.12" },
+            "engine-strict" : "true",
+            "engineStrict" : "true",
             'include_dirs' : [
                 'include',
             ],
@@ -30,12 +33,12 @@
                 '-lz',
             ],
             'cxxflags' : [
-                '-O0 -g -Wall',
+                '-O0 -g -Wall -std=c++11',
             ],
             'cflags!': [ '-fno-exceptions' ],
             'cflags_cc!': [ '-fno-exceptions' ],
             'cflags' : [
-                '-O0 -g -Wall',
+                '-O0 -g -Wall -std=c++11',
             ],
         },
     ],

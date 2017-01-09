@@ -2,7 +2,8 @@ var test_server = require("bls");
 var fs = require("fs");
 
 var config = {
-    log_conf_path : "test/comlog.conf",
+    log_path : "log/bls.log",
+    log_level : 3,
     max_client_num : 2000,
     port : 8956,
     ping_pong_time : 10,

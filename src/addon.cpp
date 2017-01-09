@@ -82,7 +82,7 @@ Handle<Value> start_server(const Arguments& args)
      * 读取配置信息
      */
     String::Utf8Value temp_str(
-            config_obj->Get(String::New("log_conf_path"))->ToString());
+            config_obj->Get(String::New("log_path"))->ToString());
     conf.log_conf_path = (char *) *temp_str;
 
     conf.log_level = config_obj->Get(
