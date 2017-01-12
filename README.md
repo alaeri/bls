@@ -122,6 +122,8 @@ server.start_server(config, function(client){
 ##API
 
 ###Function: start_server(config, cb(client))
+--------------------
+
 start a rtmp server
 - **config**  `[object]` configuration for server, including log path / port and so on. 
 - **cb** `[function]` callback function which is triggled when a new client come on TCP level. In this function, you can register many event callbacks for client, and control this client
@@ -138,6 +140,8 @@ configure items:
 | ping_pong_time | no | number | the interval seconds server sends ping package for detecting whether this client is alive or not. Default 10. |
 
 ###Function:remote_connect(ip, port, cb(client))
+--------------------
+
 Create a TCP connection to another bls server.
 - **ip** `[string]` remote bls server ip
 - **port** `[number]` remote bls server port
@@ -161,13 +165,20 @@ bls.remote_connect("127.0.0.1", 8955, function(edge_connect){
     }
 });
 ```
+
 ###Var:MAX_BUFFER_LEN
+--------------------
+
 Indicate the max size of command data.
 
 ###Class:BlsClient
+--------------------
+
 BlsClient instance stands for a client that connects to server. A lot of events can be catched from a client, and you can control this client through APIs. BlsClient inherits from Emitter.
 
 ####BlsClient.prototype.accept(allow, code, descript)
+--------------------
+
 Decide whether accept this client in RTMP protocol.
 - **allow** `[boolean]` true means accept, false means reject
 - **code** `[string]` RTMP connect reject code. If allow is true, code is  NetConnection.Connect.Success default. Otherwise it is [NetConnection.Connect.Error|NetConnection.Connect.Fail|...]
@@ -188,6 +199,8 @@ Decide whether accept this client in RTMP protocol.
 ```
 
 ####BlsClient.prototype.call(cmd_name, args_array, cb_func(result_flag, args))
+--------------------
+
 Send user custom command to client. If result is not needed, cb_func should be None.
 - **cmd_name** `[cmd_name]` user custom command name
 - **args_array** `[array]` command args. 
@@ -196,9 +209,13 @@ Send user custom command to client. If result is not needed, cb_func should be N
 	- **args** `[array]` result data recv from client
 	
 ####BlsClient.prototype.close()
+--------------------
+
 Close this client connection.
 
 ####BlsClient.prototype.edge(stream_name, cb())
+--------------------
+
 This method is made for cluster. Local BLS can pull stream data from a remote BLS server as a source. Then player clients can play this stream from local BLS. The client must be producted from `remote_connect` function.
 - **stream_name** `[string]` the name of stream you want to pull from remote BLS. And this stream_name will be local stream name.
 - **cb** `[function]` called when pull finish, which means players can play the stream name from local BLS from now on.
@@ -224,15 +241,23 @@ bls.remote_connect("127.0.0.1", 8956, function(edge_connect){
 ```
 
 ####BlsClient.prototype.get_aac_sh()
+--------------------
+
 return aac sequence header data recieved from client.
 
 ####BlsClient.prototype.get_avc_sh()
+--------------------
+
 return avc sequence header data recieved from client.
 
 ####BlsClient.prototype.is_closed()
+--------------------
+
 return True if client is not alive.
 
 ####BlsClient.prototype.play(trans_id, stream_name)
+--------------------
+
 Allow client to play one stream.
 >**Note**: One client can only play one stream now.
 >**Note**: If this stream name is not publishing, the player will never get stream data even if this stream publish later.
@@ -241,6 +266,8 @@ Allow client to play one stream.
 - **stream_name** `[number]` indicates which stream is passed to client. The stream_name must be same with the publish one. But it is not necessary same with stream name in play event.
 
 ####BlsClient.prototype.publish(trans_id, stream_name)
+--------------------
+
 Allow client to publish one stream
 
 >**Note**: One client can only publish one stream at the same time.
@@ -249,12 +276,16 @@ Allow client to publish one stream
 - **stream_name** `[number]` indicates the stream name to publish with this client.
 
 ####BlsClient.prototype.push(stream_name, cb)
+--------------------
+
 This method is made for cluster. Local BLS can push stream data to a remote BLS server as a source. Then player clients can play this stream from remote BLS. The BLS client must be producted from `remote_connect` function.
 
 - **stream_name** `[string]` the name of stream you want to push to remote BLS. 
 - **cb** `[function]` called when push finish, which means players can play the stream name from remote BLS from now on.
 
 ####BlsClient.prototype.result(result_flag, transid, args)
+--------------------
+
 Send result to client according to the command received from client.
 
 - **result_flag** `[string]` "_result" or "_error"
@@ -276,35 +307,55 @@ Example:
 ```
 
 ####BlsClient.prototype.unpublish()
+--------------------
+
 Client stop publishing stream.
 
 ####Event:connect(trans_id, connect_info)
+--------------------
+
 Emitted when a client send RTMP connect command to BLS.
 - **trans_id** `[number]` rtmp protocol needs.
 - **connect_info** `[object]` connect information recieved from client.
 
 ####Event:close(close_status)
+--------------------
+
 Emitted when client leave.
 
 ####Event:publish(trans_id, cmd_objs, stream_name)
+--------------------
+
 Emitted when client wants to publish a stream
 
 ####Event:play(trans_id, cmd_obj, stream_name)
+--------------------
+
 Emitted when client wants to play a stream
 
 ####Event:onMetaData(meta_data)
+--------------------
+
 Emitted when recieved meta data from client in process of publish stream.
 
 ####Event:unplay()
+--------------------
+
 Emitted when client stop play stream.
 
 ####Event:unpublish()
+--------------------
+
 Emitted when client stop publish stream.
 
 ####Event:ping_pong_request(delay, recv_sum)
+--------------------
+
 Emitted when client send pong response to BLS.
 - **delay** `[number]` delay after BLS send ping request to client.
 - **recv_sum** `[number]` how many bytes recved from client totally.
 
 ####Event:{customCommand}(trans_id, cmd_obj, data)
+--------------------
+
 Emitted when receive user custom command.
