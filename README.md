@@ -118,3 +118,174 @@ server.start_server(config, function(client){
     });
 });
 ```
+
+##API
+
+###Function: start_server(config, cb(client))
+start a rtmp server
+- **config**  `[object]` configuration for server, including log path / port and so on. 
+- **cb** `[function]` callback function which is triggled when a new client come on TCP level. In this function, you can register many event callbacks for client, and control this client
+	- **client** `[BlsClient]` callback argument. stand for a client, see detail about [BlsClient]()
+
+configure items:
+| Item      |    required | type | description |
+| :-------- | --------:| :--: |
+|log_path|yes|string|log file path for bls to record detail info|
+|log_level|yes|number|trace:0 debug:1 info:2 warn:3 err:4 critical:5 off:6|
+|max_client_num|yes|number|how many clients the server can hold at the same time|
+|port|yes|number|the port server listens to|
+|ping_pong_time|no|number|the interval seconds server sends ping package for detecting whether this client is alive or not. Default 10.|
+
+###Function:remote_connect(ip, port, cb(client))
+Create a TCP connection to another bls server.
+- **ip** `[string]` remote bls server ip
+- **port** `[number]` remote bls server port
+- **cb** `[function]` callback function
+	- **client** `[BlsClient]` callback argument. If connect fail client will be None, else it will be a BlsClient instance. You should call client.connect() method to complete RTMP connect.
+
+Example
+```javascript
+var bls = require("bls");
+bls.remote_connect("127.0.0.1", 8955, function(edge_connect){
+    if(edge_connect)
+    {
+        console.log("connect remote server success.")
+        edge_connect.connect({info:"auth"}, function(flag, args){
+            console.log("send connect to remote server. flag:%s args:%j", flag, args);
+        });
+    }
+    else
+    {
+        console.log("connect remote server fail");
+    }
+});
+```
+###Var:MAX_BUFFER_LEN
+Indicate the max size of command data.
+###Class:BlsClient
+BlsClient instance stands for a client that connects to server. A lot of events can be catched from a client, and you can control this client through APIs. BlsClient inherits from Emitter.
+####BlsClient.prototype.accept(allow, code, descript)
+Decide whether accept this client in RTMP protocol.
+- **allow** `[boolean]` true means accept, false means reject
+- **code** `[string]` RTMP connect reject code. If allow is true, code is  NetConnection.Connect.Success default. Otherwise it is [NetConnection.Connect.Error|NetConnection.Connect.Fail|...]
+- ** descript** `[string]` description about rejection result.
+
+```javascript
+    client.on("connect", function(trans_id, connect_info)
+    {
+        console.log("new client connect. %s tsid: %d connect_info: %j",
+            client.client_id, trans_id, connect_info);
+
+		//accept
+        client.accept(true);
+        ////reject
+        //client.accept(false, "NetConnection.Connect.Rejected", "reject");
+        });
+    });
+```
+####BlsClient.prototype.call(cmd_name, args_array, cb_func(result_flag, args))
+Send user custom command to client. If result is not needed, cb_func should be None.
+- **cmd_name** `[cmd_name]` user custom command name
+- **args_array** `[array]` command args. 
+- **cb_func** `[function]` callback function when client sends result according to this command.
+	- **result_flag** `[string]` "_result" or "_error" recv from client.
+	- **args** `[array]` result data recv from client
+####BlsClient.prototype.close()
+Close this client connection.
+####BlsClient.prototype.edge(stream_name, cb())
+This method is made for cluster. Local BLS can pull stream data from a remote BLS server as a source. Then player clients can play this stream from local BLS. The client must be producted from `remote_connect` function.
+- **stream_name** `[string]` the name of stream you want to pull from remote BLS. And this stream_name will be local stream name.
+- **cb** `[function]` called when pull finish, which means players can play the stream name from local BLS from now on.
+```javascript
+bls.remote_connect("127.0.0.1", 8956, function(edge_connect){
+    if(edge_connect)
+    {
+        console.log("connect remote server success.")
+        edge_connect.connect({info:"hehe"}, function(results){
+            console.log("send connect to remote server. recv:");
+            console.dir(arguments);
+
+            edge_connect.edge("78c1f9ba124611e4815aac853dd1c904", function(){
+                console.log("edge complete");
+            });
+        });
+    }
+    else
+    {
+        console.log("connect remote server fail");
+    }
+});
+```
+####BlsClient.prototype.get_aac_sh()
+return aac sequence header data recieved from client.
+####BlsClient.prototype.get_avc_sh()
+return avc sequence header data recieved from client.
+####BlsClient.prototype.is_closed()
+return True if client is not alive.
+####BlsClient.prototype.play(trans_id, stream_name)
+Allow client to play one stream.
+>**Note**: One client can only play one stream now.
+>**Note**: If this stream name is not publishing, the player will never get stream data even if this stream publish later.
+
+- **trans_id** `[number]` must be same with trans id in play event
+- **stream_name** `[number]` indicates which stream is passed to client. The stream_name must be same with the publish one. But it is not necessary same with stream name in play event.
+####BlsClient.prototype.publish(trans_id, stream_name)
+Allow client to publish one stream
+>**Note**: One client can only publish one stream at the same time.
+
+- **trans_id** `[number]` must be same with trans id in publish event.
+- **stream_name** `[number]` indicates the stream name to publish with this client.
+####BlsClient.prototype.push(stream_name, cb)
+This method is made for cluster. Local BLS can push stream data to a remote BLS server as a source. Then player clients can play this stream from remote BLS. The BLS client must be producted from `remote_connect` function.
+- **stream_name** `[string]` the name of stream you want to push to remote BLS. 
+- **cb** `[function]` called when push finish, which means players can play the stream name from remote BLS from now on.
+####BlsClient.prototype.result(result_flag, transid, args)
+Send result to client according to the command received from client.
+- **result_flag** `[string]` "_result" or "_error"
+- **transid** `[number]` must be same with transid in command event
+- **args** `[array]` result data
+
+Example:
+```javascript
+    //listen to custom command from client, so client can send custom data to bls
+    client.on("customCmd", function(trans_id, cmd_obj, data){
+        console.log("get user custom command. %s %s %s", trans_id, cmd_obj, data);
+
+        var result = ["result data"];
+
+        //you can answer client with "_result" or "_error"
+        //trans_id must be same with the one in cb func arguments
+        client.result("_result", trans_id, result);
+    });
+```
+####BlsClient.prototype.unpublish()
+Client stop publishing stream.
+
+####Event:connect(trans_id, connect_info)
+Emitted when a client send RTMP connect command to BLS.
+- **trans_id** `[number]` rtmp protocol needs.
+- **connect_info** `[object]` connect information recieved from client.
+
+####Event:close(close_status)
+Emitted when client leave.
+
+####Event:publish(trans_id, cmd_objs, stream_name)
+Emitted when client wants to publish a stream
+
+####Event:play(trans_id, cmd_obj, stream_name)
+Emitted when client wants to play a stream
+####Event:onMetaData(meta_data)
+Emitted when recieved meta data from client in process of publish stream.
+####Event:unplay()
+Emitted when client stop play stream.
+
+####Event:unpublish()
+Emitted when client stop publish stream.
+
+####Event:ping_pong_request(delay, recv_sum)
+Emitted when client send pong response to BLS.
+- **delay** `[number]` delay after BLS send ping request to client.
+- **recv_sum** `[number]` how many bytes recved from client totally.
+
+####Event:{customCommand}(trans_id, cmd_obj, data)
+Emitted when receive user custom command.

@@ -54,7 +54,7 @@ test_server.start_server(config, function(client){
 
 setTimeout(function(){
 
-	test_server.remote_connect("127.0.0.1", 8955, function(edge_connect){
+	test_server.remote_connect("127.0.0.1", 8956, function(edge_connect){
 		if(edge_connect)
 		{
 			console.log("connect remote server success.")
@@ -62,7 +62,9 @@ setTimeout(function(){
 				console.log("send connect to remote server. recv:");
 				console.dir(arguments);
 
-				edge_connect.push("78c1f9ba124611e4815aac853dd1c904");
+				edge_connect.edge("78c1f9ba124611e4815aac853dd1c904", function(){
+                    console.log("edge complete");
+                });
 			});
 		}
 		else

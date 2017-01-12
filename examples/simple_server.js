@@ -20,6 +20,7 @@ var config = {
 
 //start listen and serve as RTMP server
 //cb func is called when a client connects(tcp connect) to server
+//client argument presents a rtmp client
 server.start_server(config, function(client){
     console.log("client come on! id: %s", client.client_id);
 
@@ -97,7 +98,7 @@ server.start_server(config, function(client){
     client.on("customCmd", function(trans_id, cmd_obj, data){
         console.log("get user custom command. %s %s %s", trans_id, cmd_obj, data);
 
-        var result = "result data";
+        var result = ["result data"];
 
         //you can answer client with "_result" or "_error"
         //trans_id must be same with the one in cb func arguments

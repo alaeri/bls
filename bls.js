@@ -3,10 +3,14 @@ var util                = require("util");
 var EventEmitter     = require("events").EventEmitter;
 var amf                 = require("node-amfutils");
 
+//buffer size for command data, one client uses one buffer
+//do not send custom command with data bigger than the size
 var MAX_BUFFER_LEN = 2*1024;
+
+//the maximum size of a video frame
 var MAX_VIDEO_BUFFER_LEN = 2*1024*1024;
 
-var BLS_VERSION = "0.1.0";
+var BLS_VERSION = "1.0.2";
 
 var g_ping_pong_time = 10;
 
@@ -546,4 +550,6 @@ module.exports = {
     start_server : start_server,
     remote_connect : remote_connect,
     CON_STATE : BLS_STATE, 
+    MAX_BUFFER_LEN : MAX_BUFFER_LEN,
+    MAX_VIDEO_BUFFER_LEN : MAX_VIDEO_BUFFER_LEN,
 };
