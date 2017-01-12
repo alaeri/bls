@@ -128,6 +128,7 @@ start a rtmp server
 	- **client** `[BlsClient]` callback argument. stand for a client, see detail about [BlsClient]()
 
 configure items:
+
 | Item      |    required | type | description |
 |-----------|-------------|------|-------------|
 | log_path |  yes | string | log file path for bls to record detail info  |
