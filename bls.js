@@ -3,7 +3,7 @@ var util                = require("util");
 var EventEmitter     = require("events").EventEmitter;
 var amf                 = require("node-amfutils");
 
-var MAX_BUFFER_LEN = 2000;
+var MAX_BUFFER_LEN = 2*1024;
 var MAX_VIDEO_BUFFER_LEN = 2*1024*1024;
 
 var BLS_VERSION = "0.1.0";

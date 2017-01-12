@@ -6,7 +6,7 @@ var config = {
 
     //trace:0 debug:1 info:2 warn:3 err:4 critical:5 off:6
     //if you use low level, bls will be more busy
-    log_level : 3,
+    log_level : 1,
 
     //the maximum number of clients connect to server concurrently
     max_client_num : 2000,
@@ -28,8 +28,15 @@ server.start_server(config, function(client){
     {
         console.log("new client connect. %s tsid: %d connect_info: %j", 
             client.client_id, trans_id, connect_info);
+
         client.accept(true);
         //client.accept(false, "NetConnection.Connect.Rejected", "reject");
+        
+        //you can send any command to client
+        //if you need result from client, the callback function must be set
+        client.call("needResult", [{}, {data:66}], function(res_cmd, res_args){
+            console.log("get result from client %s %s", res_cmd, res_args);
+        });
     });
 
     //this client leave
@@ -45,11 +52,10 @@ server.start_server(config, function(client){
         console.log("client call publish. tsid: %d cmd_objs: %j stream_name: %s",
             trans_id, cmd_objs, stream_name);
 
+        //if you allow this client to publish stream with stream_name, jus need to call publish function
         //trans_id must be same with trans_id in cb arguments
         //you can custom the stream name which bls uses to publish
         client.publish(trans_id, stream_name);
-
-        client.publish_stream_name = stream_name;
     });
 
     //register a cb func when this client wants to play a stream
@@ -65,6 +71,7 @@ server.start_server(config, function(client){
     });
 
     //when client publishs a stream, there will be a meta data in stream data
+    //meta data size should not be bigger than MAX_BUFFER_LEN, default is 2KB
     client.on("onMetaData", function(meta_data){
         console.log("get metadata %j", meta_data);
     })
@@ -84,5 +91,16 @@ server.start_server(config, function(client){
     //delay indicates the transport delay between bls and client
     client.on("ping_pong_request", function(delay, recv_sum){
         console.log("get pong response! %d %d", delay, recv_sum);
+    });
+
+    //listen to custom command from client, so client can send custom data to bls
+    client.on("customCmd", function(trans_id, cmd_obj, data){
+        console.log("get user custom command. %s %s %s", trans_id, cmd_obj, data);
+
+        var result = "result data";
+
+        //you can answer client with "_result" or "_error"
+        //trans_id must be same with the one in cb func arguments
+        client.result("_result", trans_id, result);
     });
 });

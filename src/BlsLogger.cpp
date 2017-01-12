@@ -29,7 +29,11 @@ void init_bls_logger(const char* path, int level)
     //spd::level val = static_cast<spd::level>(level);
     spd::set_level(spd::level::info);
 
-    spd::daily_logger_mt("bls", path);
+    auto daily_logger = spd::daily_logger_mt("bls", path, 0, 0);
+    daily_logger->flush_on(spd::level::debug);
+
+    spd::get("bls")->info("nononono",2);
+    SYS_NOTICE("init logger finish");
 
     //const char *dir_path = ".";
     //int ret = com_loadlog(dir_path, path);
