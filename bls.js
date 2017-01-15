@@ -156,39 +156,19 @@ BlsClient.prototype.is_closed = function()
     return this.connect_state == BLS_STATE.CLOSE;
 }
 
-BlsClient.prototype.enable_av_cb = function(io_server, stream_name)
+BlsClient.prototype.enable_av_cb = function(cb_func)
 {
-    console.log('enable av', stream_name, this.av_listener_count);
-
-    this.io_server = io_server;
-    this.publish_stream_name = stream_name;
-
-    if(!(this.av_listener_count ++))
-    {
-        var self = this;
-        bls.enable_throwup_av(this._client, function(av_type, is_key, is_sh, timestamp, size)
-            {
-                if(is_sh)
-                {
-                    if(av_type == 'video')
-                        self.avc_sh = new Buffer(self.av_buffer.slice(0, size));
-                    if(av_type == 'audio')
-                        self.aac_sh = new Buffer(self.av_buffer.slice(0, size));
-                }
-                //self.emit("av", av_type, is_key, is_sh, tiemstamp, size);
-                io_server.dispatch_av(stream_name, av_type, timestamp, is_sh, is_key, new Buffer(self.av_buffer.slice(0, size)));
-            });
-    }
+    var self = this;
+    bls.enable_throwup_av(
+        this._client, 
+        function(av_type, is_key, is_sh, timestamp, size) {
+            cb_func(av_type, timestamp, is_sh, is_key, new Buffer(self.av_buffer.slice(0, size)));
+        });
 }
 
 BlsClient.prototype.disable_av_cb = function()
 {
-    console.log('disable av ', this.av_listener_count);
-
-    this.av_listener_count --;
-
-    if(this.av_listener_count <= 0)
-        bls.disable_throwup_av(this._client);
+    bls.disable_throwup_av(this._client);
 }
 
 BlsClient.prototype.get_aac_sh = function()

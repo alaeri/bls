@@ -104,4 +104,13 @@ server.start_server(config, function(client){
         //trans_id must be same with the one in cb func arguments
         client.result("_result", trans_id, result);
     });
+
+    client.enable_av_cb(function(av_type, timestamp, is_sh, is_key, data){
+        console.log("get a %s data. ts:%d, is sequence header:%s, is key frame:%s", 
+            av_type, timestamp, is_sh, is_key);
+    });
+    
+    setTimeout(function(){
+        client.disable_av_cb()
+    }, 5000);
 });

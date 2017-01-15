@@ -311,6 +311,30 @@ Example:
 
 Client stop publishing stream.
 
+####BlsClient.prototype.enable_av_cb(cb(av_type, timestamp, is_sh, is_key, data))
+--------------------
+
+You can get each audio/video frame from client with this method.
+- **cb** `[function]` call back function called when get a frame
+    - **av_type** `[string]` "video" or "audio"
+    - **timestamp** `[number]` time stamp carried with this frame
+    - **is_sh** `[boolean]` whether is sequence header data
+    - **is_key** `[boolean]` whether is key frame
+    - **data** `[buffer]` frame data
+
+example:
+```javascript
+client.enable_av_cb(function(av_type, timestamp, is_sh, is_key, data){
+    console.log("get a %s data. ts:%d, is sequence header:%s, is key frame:%s", 
+        av_type, timestamp, is_sh, is_key);
+});
+```
+
+####BlsClient.prototype.disable_av_cb()
+--------------------
+
+don't throw up audio/video data to js call back function.
+
 ####Event:connect(trans_id, connect_info)
 --------------------
 
