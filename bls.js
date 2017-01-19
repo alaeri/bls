@@ -437,7 +437,7 @@ BlsClient.prototype.edge = function(stream_name, cb)
 
         if(!bls.publish_stream(self._client, stream_name))
         {
-            this.close();
+            self.close();
             return;
         }
 

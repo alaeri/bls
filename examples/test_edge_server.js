@@ -1,14 +1,16 @@
-var test_server = require("bls");
+var bls = require("bls");
 
 var config = {
-	log_path : "log/bls.log",
+	log_path : "log/bls_edge.log",
     log_level : 3,
 	max_client_num : 20,
-	port : 7001,
+	port : 8900,
 	ping_pong_time : 10,
 };
 
-test_server.start_server(config, function(client){
+var edged_stream = {};
+
+var result = bls.start_server(config, function(client){
 	console.log("client come on! id: %s", client.client_id);
 
 	client.on("connect", function(trans_id, connect_info)
@@ -24,27 +26,32 @@ test_server.start_server(config, function(client){
 		console.log("client close ", close_status);
 	});
 
-	client.on("publish", function(trans_id, cmd_objs, stream_name)
-	{
-		console.log("client call publish. tsid: %d cmd_objs: %j stream_name: %s",
-			trans_id, cmd_objs, stream_name);
-
-		client.publish(trans_id, stream_name);
-	});
-
 	client.on("play", function(trans_id, cmd_obj, stream_name){
 		console.log("client call play. tsid: %d cmd_objs: %j stream_name: %s",
 			trans_id, cmd_obj, stream_name);
 
-		client.play(trans_id, stream_name);
+        //if the stream has beed pull from src host,
+        //then it can play directly.
+        if (edged_stream[stream_name]) {
+            console.log("play %s directly", stream_name);
+		    client.play(trans_id, stream_name);
+        } else {
+            console.log("need pull from src host");
+            pull_stream_from_src(stream_name, function(res) {
+                if (res) {
+                    edged_stream[stream_name] = true;
+                    client.play(trans_id, stream_name);
+                } else {
+                    console.log("pull stream fail");
+                    client.close();
+                    console.log("debug");
+                }
+            });
+        }
 	});
 
 	client.on("unplay", function(){
 		console.log("client unplay stream......");
-	});
-
-	client.on("unpublish", function(){
-		console.log("client unpublish stream......");
 	});
 
 	// setTimeout(function(){
@@ -52,25 +59,46 @@ test_server.start_server(config, function(client){
 	// }, 5000);
 });
 
-setTimeout(function(){
+function pull_stream_from_src(stream_name, cb_func){
+    //connect remote src BLS first
+	bls.remote_connect("127.0.0.1", 8956, function(edge_connect){
 
-	test_server.remote_connect("127.0.0.1", 8956, function(edge_connect){
+        //TCP connect success
 		if(edge_connect)
 		{
 			console.log("connect remote server success.")
-			edge_connect.connect({info:"hehe"}, function(results){
+
+            var has_return = false;
+
+            //you can send custom infomations to source BLS when doing RTMP connect
+			edge_connect.connect({info:"custom info"}, function(results){
 				console.log("send connect to remote server. recv:");
 				console.dir(arguments);
 
-				edge_connect.edge("78c1f9ba124611e4815aac853dd1c904", function(){
+				edge_connect.edge(stream_name, function(){
+                    //Note: If this edge client is closed when waiting for edge result, 
+                    //this call back will never be triggled.
                     console.log("edge complete");
+
+                    //call back success
+                    cb_func(true);
+                    has_return = true;
                 });
 			});
+
+            edge_connect.on("close", function(){
+                console.log("edge for %s close", stream_name);
+                
+                if (!has_return) {
+                    cb_func(false);
+                }
+            });
 		}
 		else
 		{
 			console.log("connect remote server fail");
+            cb_func(false);
 		}
 	});
 
-}, 1000);
+}

@@ -18,6 +18,9 @@ var config = {
     ping_pong_time : 10,
 };
 
+//record the publishing stream's name
+var publishing_stream = {};
+
 //start listen and serve as RTMP server
 //cb func is called when a client connects(tcp connect) to server
 //client argument presents a rtmp client
@@ -44,6 +47,10 @@ server.start_server(config, function(client){
     client.on("close", function(close_status)
     {
         console.log("%s client close ", client.client_id, close_status);
+
+        if (client.publish_stream_name) {
+            delete publishing_stream[client.publish_stream_name];
+        }
     });
 
     //register a cb func when this client wants to publish a stream.
@@ -53,10 +60,18 @@ server.start_server(config, function(client){
         console.log("client call publish. tsid: %d cmd_objs: %j stream_name: %s",
             trans_id, cmd_objs, stream_name);
 
-        //if you allow this client to publish stream with stream_name, jus need to call publish function
-        //trans_id must be same with trans_id in cb arguments
-        //you can custom the stream name which bls uses to publish
-        client.publish(trans_id, stream_name);
+        //if this stream name is publishing, you can not publish the same stream name
+        if (!publishing_stream[stream_name]) {
+            //if you allow this client to publish stream with stream_name, just need to call publish function
+            //trans_id must be same with trans_id in cb arguments
+            //you can custom the stream name which bls uses to publish
+            client.publish(trans_id, stream_name);
+
+            publishing_stream[stream_name] = true;
+            client.publish_stream_name = stream_name;
+        } else {
+            client.close();
+        }
     });
 
     //register a cb func when this client wants to play a stream
@@ -65,10 +80,16 @@ server.start_server(config, function(client){
         console.log("client call play. tsid: %d cmd_objs: %j stream_name: %s",
             trans_id, cmd_obj, stream_name);
 
-        //trans_id must be same with the cb arguments
-        //you can choose a stream name for this client, not must be same with the client wants
-        client.play(trans_id, stream_name);
-        
+        if (publishing_stream[stream_name]) {
+            //trans_id must be same with the cb arguments
+            //you can choose a stream name for this client, not must be same with the client wants
+            //
+            //NOTE: you can also wait for publish src ready than call play method. In this example, 
+            //we just close this player.
+            client.play(trans_id, stream_name);
+        } else {
+            client.close();
+        }
     });
 
     //when client publishs a stream, there will be a meta data in stream data

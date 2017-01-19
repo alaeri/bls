@@ -1,13 +1,29 @@
 # bls
 BLS is a rtmp server framework for Nodejs. This server is developed in libuv I/O framework which is used by Nodejs. So it's performace in case of a large number of clients push or pull stream data concurrently is very good. At the same time, you can add custom logics, such as auth/cluster, in this framework easily with js api. A variety of API are provided to manage RTMP stream, such as open and close a stream, get the quality of one stream.
 
-> Note: Not the full RTMP protocal is supported. But the basic function of live play has been realised.
+-------------
+
+[TOC]
 
 ##Requirement
 - only support nodejs >=0.10 <0.12 just now
 - Linux 64 bit
 
+##Install
+```
+npm install bls
+```
+
+##Features of RTMP
+
+- Not the full RTMP protocal is supported. But the basic function of live play has been realised.
+- BLS cache the last gop of a stream. So player can show video picture very quickly.
+- Only support H264/AAC.
+- One client can only publishs/plays one stream just now.
+
 ##Example
+###SimpleServer
+A simple RTMP server. You can publish stream with ffmpeg, and play stream with flash/vlc/ffmpeg...
 ```javascript
 //simple_server.js
 
@@ -31,8 +47,12 @@ var config = {
     ping_pong_time : 10,
 };
 
+//record the publishing stream's name
+var publishing_stream = {};
+
 //start listen and serve as RTMP server
 //cb func is called when a client connects(tcp connect) to server
+//client argument presents a rtmp client
 server.start_server(config, function(client){
     console.log("client come on! id: %s", client.client_id);
 
@@ -56,6 +76,10 @@ server.start_server(config, function(client){
     client.on("close", function(close_status)
     {
         console.log("%s client close ", client.client_id, close_status);
+
+        if (client.publish_stream_name) {
+            delete publishing_stream[client.publish_stream_name];
+        }
     });
 
     //register a cb func when this client wants to publish a stream.
@@ -65,10 +89,18 @@ server.start_server(config, function(client){
         console.log("client call publish. tsid: %d cmd_objs: %j stream_name: %s",
             trans_id, cmd_objs, stream_name);
 
-        //if you allow this client to publish stream with stream_name, jus need to call publish function
-        //trans_id must be same with trans_id in cb arguments
-        //you can custom the stream name which bls uses to publish
-        client.publish(trans_id, stream_name);
+        //if this stream name is publishing, you can not publish the same stream name
+        if (!publishing_stream[stream_name]) {
+            //if you allow this client to publish stream with stream_name, just need to call publish function
+            //trans_id must be same with trans_id in cb arguments
+            //you can custom the stream name which bls uses to publish
+            client.publish(trans_id, stream_name);
+
+            publishing_stream[stream_name] = true;
+            client.publish_stream_name = stream_name;
+        } else {
+            client.close();
+        }
     });
 
     //register a cb func when this client wants to play a stream
@@ -77,10 +109,16 @@ server.start_server(config, function(client){
         console.log("client call play. tsid: %d cmd_objs: %j stream_name: %s",
             trans_id, cmd_obj, stream_name);
 
-        //trans_id must be same with the cb arguments
-        //you can choose a stream name for this client, not must be same with the client wants
-        client.play(trans_id, stream_name);
-        
+        if (publishing_stream[stream_name]) {
+            //trans_id must be same with the cb arguments
+            //you can choose a stream name for this client, not must be same with the client wants
+            //
+            //NOTE: you can also wait for publish src ready than call play method. In this example, 
+            //we just close this player.
+            client.play(trans_id, stream_name);
+        } else {
+            client.close();
+        }
     });
 
     //when client publishs a stream, there will be a meta data in stream data
@@ -110,21 +148,154 @@ server.start_server(config, function(client){
     client.on("customCmd", function(trans_id, cmd_obj, data){
         console.log("get user custom command. %s %s %s", trans_id, cmd_obj, data);
 
-        var result = "result data";
+        var result = ["result data"];
 
         //you can answer client with "_result" or "_error"
         //trans_id must be same with the one in cb func arguments
         client.result("_result", trans_id, result);
     });
+
+    client.enable_av_cb(function(av_type, timestamp, is_sh, is_key, data){
+        console.log("get a %s data. ts:%d, is sequence header:%s, is key frame:%s", 
+            av_type, timestamp, is_sh, is_key);
+    });
+    
+    setTimeout(function(){
+        client.disable_av_cb()
+    }, 5000);
 });
 ```
+###Cluster
+A RTMP cluster with two hosts. The simple server upon runs as a source host. This edge server pull stream from source host.You can build more complex topo with BLS.
+```javascript
+//test_edge_server.js
+
+var bls = require("bls");
+
+var config = {
+	log_path : "log/bls_edge.log",
+    log_level : 3,
+	max_client_num : 20,
+	port : 8900,
+	ping_pong_time : 10,
+};
+
+var edged_stream = {};
+
+var result = bls.start_server(config, function(client){
+	console.log("client come on! id: %s", client.client_id);
+
+	client.on("connect", function(trans_id, connect_info)
+	{
+		console.log("new client connect. tsid: %d connect_info: %j", 
+			trans_id, connect_info);
+		client.accept(true);
+		//client.accept(false, "NetConnection.Connect.Rejected", "hehe");
+	});
+
+	client.on("close", function(close_status)
+	{
+		console.log("client close ", close_status);
+	});
+
+	client.on("play", function(trans_id, cmd_obj, stream_name){
+		console.log("client call play. tsid: %d cmd_objs: %j stream_name: %s",
+			trans_id, cmd_obj, stream_name);
+
+        //if the stream has beed pull from src host,
+        //then it can play directly.
+        if (edged_stream[stream_name]) {
+            console.log("play %s directly", stream_name);
+		    client.play(trans_id, stream_name);
+        } else {
+            console.log("need pull from src host");
+            pull_stream_from_src(stream_name, function(res) {
+                if (res) {
+                    edged_stream[stream_name] = true;
+                    client.play(trans_id, stream_name);
+                } else {
+                    console.log("pull stream fail");
+                    client.close();
+                    console.log("debug");
+                }
+            });
+        }
+	});
+
+	client.on("unplay", function(){
+		console.log("client unplay stream......");
+	});
+
+	// setTimeout(function(){
+	// 	client.close();
+	// }, 5000);
+});
+
+function pull_stream_from_src(stream_name, cb_func){
+    //connect remote src BLS first
+	bls.remote_connect("127.0.0.1", 8956, function(edge_connect){
+
+        //TCP connect success
+		if(edge_connect)
+		{
+			console.log("connect remote server success.")
+
+            var has_return = false;
+
+            //you can send custom infomations to source BLS when doing RTMP connect
+			edge_connect.connect({info:"custom info"}, function(results){
+				console.log("send connect to remote server. recv:");
+				console.dir(arguments);
+
+				edge_connect.edge(stream_name, function(){
+                    //Note: If this edge client is closed when waiting for edge result, 
+                    //this call back will never be triggled.
+                    console.log("edge complete");
+
+                    //call back success
+                    cb_func(true);
+                    has_return = true;
+                });
+			});
+
+            edge_connect.on("close", function(){
+                console.log("edge for %s close", stream_name);
+                
+                if (!has_return) {
+                    cb_func(false);
+                }
+            });
+		}
+		else
+		{
+			console.log("connect remote server fail");
+            cb_func(false);
+		}
+	});
+
+}
+```
+
+##Performance
+We test BLS's performance with many ffmpegs client connecting to BLS at a time pushing and pulling streams.
+One player plays one publisher, as a pair. With the number of pairs grows up, CPU idle is the main resource BLS takes. So we just forcus on usage of one CPU core. Result is shown below.
+
+>The rate of each stream is about 800Kb/s
+
+|  number of pair  |  CPU usage  |
+|------------------|-------------|
+| 300 | 10% |
+| 500 | 20% |
+| 1000 | 40% |
+| 2000 | 80% |
+| 3000 | 99% |
 
 ##API
 
 ###Function: start_server(config, cb(client))
 --------------------
 
-start a rtmp server
+start a rtmp server. If start and listen fail, this process will just exit.
 - **config**  `[object]` configuration for server, including log path / port and so on. 
 - **cb** `[function]` callback function which is triggled when a new client come on TCP level. In this function, you can register many event callbacks for client, and control this client
 	- **client** `[BlsClient]` callback argument. stand for a client, see detail about [BlsClient]()
@@ -260,7 +431,7 @@ return True if client is not alive.
 
 Allow client to play one stream.
 >**Note**: One client can only play one stream now.
->**Note**: If this stream name is not publishing, the player will never get stream data even if this stream publish later.
+>**Note**: If this stream name is not publishing, the player will never get stream data even if this stream publish later. So you can wait for publish soucre ready then call play method of player.
 
 - **trans_id** `[number]` must be same with trans id in play event
 - **stream_name** `[number]` indicates which stream is passed to client. The stream_name must be same with the publish one. But it is not necessary same with stream name in play event.
