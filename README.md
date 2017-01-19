@@ -3,8 +3,6 @@ BLS is a rtmp server framework for Nodejs. This server is developed in libuv I/O
 
 -------------
 
-[TOC]
-
 ##Requirement
 - only support nodejs >=0.10 <0.12 just now
 - Linux 64 bit
