@@ -2,7 +2,7 @@
     'targets' : [
         {
             'target_name' : 'bls',
-            "engines" : { "node" : ">=0.10.3 <0.12" },
+            "engines" : { "node" : ">=0.10.3" },
             "engine-strict" : "true",
             "engineStrict" : "true",
             'include_dirs' : [
