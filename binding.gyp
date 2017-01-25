@@ -27,7 +27,7 @@
             ],
             'libraries' : [
                 '-lpthread',
-                '-lrt',
+#                 '-lrt',
                 '-lssl',
                 '-lcrypto',
                 '-lz',
